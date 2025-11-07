@@ -5,8 +5,11 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <sys/types.h>
+#include <sys/sem.h>
 
 #define SHM_KEY 0x1234
+#define SEM_KEY 0x4321
+
 struct SharedData{
     bool isChildDone;
     int multiple;
@@ -26,6 +29,25 @@ int main(void){
         return 1;
     }
 
+    int sem_id = semget(SEM_KEY, 1, 0666 | IPC_CREAT);
+    if(sem_id == -1) {
+        perror("semget failed");
+        return 1;
+    }
+
+    const struct sembuf wait = { //decrements semaphore
+        .sem_num = 0,
+        .sem_op = -1,
+        .sem_flg = 0
+    };
+
+    const struct sembuf signal = { //increments semaphore
+        .sem_num = 0,
+        .sem_op = 1,
+        .sem_flg = 0
+    };
+ 
+
     while ((data->counter) <= 100){
         sleep(1);
     }
@@ -35,6 +57,7 @@ int main(void){
     pid_t pid = getpid();
 
     while (counter2 > -500 && (data->counter) <= 500){
+        semop(sem_id, &wait, 1); //Protects shared data so parent process cant moddify it 
         int m = data->multiple;
         int isMult = ((m != 0) && (counter2 % m ==0)); //checking divisbility
         if (isMult){
@@ -48,6 +71,8 @@ int main(void){
         counter2--;
         sleep(1);
         cycle++;
+
+        semop(sem_id, &signal, 1); //Parent process now has access to shared data
     }
 
     data -> isChildDone = true;
