@@ -35,13 +35,13 @@ int main(void){
         return 1;
     }
 
-    const struct sembuf wait = { //decrements semaphore
+    struct sembuf wait = { //decrements semaphore
         .sem_num = 0,
         .sem_op = -1,
         .sem_flg = 0
     };
 
-    const struct sembuf signal = { //increments semaphore
+    struct sembuf signal = { //increments semaphore
         .sem_num = 0,
         .sem_op = 1,
         .sem_flg = 0
